@@ -70,6 +70,66 @@ class SimpleBlock(nn.Module):
         out = self.relu2(out)
         return out
 
+#Resneet12
+class Block12(nn.Module):
+    maml = False #Default
+    def __init__(self, indim, outdim, half_res):
+        super(Block12, self).__init__()
+        self.indim = indim
+        self.outdim = outdim
+        if self.maml:
+            self.C1 = Conv2d_fw(indim, outdim, kernel_size=3, stride=2 if half_res else 1, padding=1, bias=False)
+            self.BN1 = BatchNorm2d_fw(outdim)
+            self.C2 = Conv2d_fw(outdim, outdim,kernel_size=3, padding=1,bias=False)
+            self.BN2 = BatchNorm2d_fw(outdim)
+        else:
+            self.C1 = nn.Conv2d(indim, outdim, kernel_size=3, stride=2 if half_res else 1, padding=1, bias=False)
+            self.BN1 = nn.BatchNorm2d(outdim)
+            self.C2 = nn.Conv2d(outdim, outdim,kernel_size=3, padding=1,bias=False)
+            self.BN2 = nn.BatchNorm2d(outdim)
+            self.C3 = nn.Conv2d(outdim, outdim,kernel_size=3, padding=1,bias=False)
+            self.BN3 = nn.BatchNorm2d(outdim)
+        self.relu1 = nn.ReLU(inplace=True)
+        self.relu2 = nn.ReLU(inplace=True)
+        self.relu3 = nn.ReLU(inplace=True)
+
+        self.parametrized_layers = [self.C1, self.C2,self.C3, self.BN1, self.BN2,self.BN3]
+
+        self.half_res = half_res
+
+        # if the input number of channels is not equal to the output, then need a 1x1 convolution
+        if indim!=outdim:
+            if self.maml:
+                self.shortcut = Conv2d_fw(indim, outdim, 1, 2 if half_res else 1, bias=False)
+                self.BNshortcut = BatchNorm2d_fw(outdim)
+            else:
+                self.shortcut = nn.Conv2d(indim, outdim, 1, 2 if half_res else 1, bias=False)
+                self.BNshortcut = nn.BatchNorm2d(outdim)
+
+            self.parametrized_layers.append(self.shortcut)
+            self.parametrized_layers.append(self.BNshortcut)
+            self.shortcut_type = '1x1'
+        else:
+            self.shortcut_type = 'identity'
+
+        for layer in self.parametrized_layers:
+            init_layer(layer)
+
+    def forward(self, x):
+        out = self.C1(x)
+        out = self.BN1(out)
+        out = self.relu1(out)
+        out = self.C2(out)
+        out = self.BN2(out)
+        out = self.relu2(out)
+        out = self.C3(out)
+        out = self.BN3(out)
+        short_out = x if self.shortcut_type == 'identity' else self.BNshortcut(self.shortcut(x))
+        out = out + short_out
+        out = self.relu3(out)
+        return out
+
+
 # Bottleneck block
 class BottleneckBlock(nn.Module):
     def __init__(self, indim, outdim, half_res):
@@ -163,10 +223,42 @@ class ResNet(nn.Module):
         out = self.trunk(x)
         return out
 
+def Conv4():
+    return ConvNet(4)
+
+def Conv6():
+    return ConvNet(6)
+
+def Conv4NP():
+    return ConvNetNopool(4)
+
+def Conv6NP():
+    return ConvNetNopool(6)
+
+def Conv4S():
+    return ConvNetS(4)
+
+def Conv4SNP():
+    return ConvNetSNopool(4)
+
 def ResNet10( flatten = True):
     return ResNet(SimpleBlock, [1,1,1,1],[64,128,256,512], flatten)
 
+def ResNet12( flatten = True):
+    return ResNet(Block12, [1,1,1,1],[64,128,256,512], flatten)
 
+
+def ResNet18( flatten = True):
+    return ResNet(SimpleBlock, [2,2,2,2],[64,128,256,512], flatten)
+
+def ResNet34( flatten = True):
+    return ResNet(SimpleBlock, [3,4,6,3],[64,128,256,512], flatten)
+
+def ResNet50( flatten = True):
+    return ResNet(BottleneckBlock, [3,4,6,3], [256,512,1024,2048], flatten)
+
+def ResNet101( flatten = True):
+    return ResNet(BottleneckBlock, [3,4,23,3],[256,512,1024,2048], flatten)
 
 
 
