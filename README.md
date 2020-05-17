@@ -64,4 +64,5 @@ model based on Meta learning
     
     
 ## References
-
+    Framework: https://github.com/IBM/cdfsl-benchmark
+    Backbone: https://github.com/wyharveychen/CloserLookFewShot
