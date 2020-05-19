@@ -1,19 +1,5 @@
 # Cross-Domain Few-Shot Learning 
 
-## Introduction
-
-
-
-
-## General information
-
-* **No meta-learning in-domain**
-* Only ImageNet based models or meta-learning allowed.
-* 5-way classification
-* n-shot, for varying n per dataset
-* 600 randomly selected few-shot 5-way trials up to 50-shot (scripts provided to generate the trials)
-* Average accuracy across all trials reported for evaluation.
-
 
 ## Enviroment
 
